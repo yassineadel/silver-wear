@@ -1,0 +1,294 @@
+// ============================================================================
+//  SILVER JEWELRY E-COMMERCE — AUTHENTICATION SCHEMA (Module 1)
+// ============================================================================
+//  Stack : PostgreSQL + Prisma
+//  Scope : Users, sessions, email verification, password reset
+//  Note  : Commerce models (Product, Variant, Order, Payment) are Module 2.
+// ============================================================================
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  importFileExtension = "ts"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================================
+//  ENUMS
+// ============================================================================
+
+/// Kept deliberately minimal for V1.
+/// Granular permissions belong in a separate Permission model (Module 2+),
+/// not in an ever-growing enum. Adding STAFF/MANAGER later is a trivial
+/// migration; splitting a permission model out of an enum is not.
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+// ============================================================================
+//  USER
+// ============================================================================
+
+model User {
+  id String @id @default(cuid())
+  // cuid over autoincrement: sequential IDs leak order volume and growth rate,
+  //   and invite IDOR probing (/orders/1 -> /orders/2).
+  // cuid over uuid(v4): both unguessable, but cuid is monotonically increasing,
+  //   so inserts append to the B-tree instead of fragmenting it.
+
+  // ---- Identity -----------------------------------------------------------
+
+  /// ALWAYS stored lowercase + trimmed. Normalisation is enforced by a Zod
+  /// schema at the edge — never rely on individual route handlers to remember.
+  /// Without this: "Ahmed@Gmail.com" and "ahmed@gmail.com" become two accounts.
+  email String @unique
+
+  /// Argon2id output. ONE column — the encoded string already contains the
+  /// algorithm, version, memory/time/parallelism parameters, AND the salt.
+  /// A separate `salt` column is a misunderstanding of the library.
+  /// Tune params to ~300-500ms on the PRODUCTION instance, not a laptop.
+  passwordHash String
+
+  firstName String
+  lastName  String
+
+  /// Nullable: not required to register, but required before checkout —
+  /// Egyptian couriers call before delivery. Enforce at checkout, not signup.
+  /// Deliberately NOT @unique: families and couples share numbers, and
+  /// recycled numbers would permanently block a legitimate new customer.
+  phone String?
+
+  role Role @default(CUSTOMER)
+  // Safe default. An admin is created by an explicit, audited action —
+  // never by an accidental omission in an insert.
+
+  // ---- Email verification -------------------------------------------------
+
+  /// null = unverified. Timestamp = verified, and WHEN.
+  /// Chosen over a Boolean: same storage cost, strictly more information.
+  /// Enables "purge unverified accounts older than 30 days" with no extra field.
+  emailVerifiedAt DateTime?
+
+  // ---- Brute-force / credential-stuffing defence --------------------------
+
+  /// Incremented on every failed login. RESET TO 0 on success.
+  /// Complements IP rate limiting: IP limits stop one machine hitting many
+  /// accounts; this stops a botnet (many IPs, one attempt each) hitting one.
+  failedLoginCount Int @default(0)
+
+  /// null = not locked. Future = locked until then. Past = expired, treat as unlocked.
+  /// Single nullable field instead of `isLocked Boolean` + `lockedUntil`:
+  /// two fields can contradict each other, and one nullable timestamp
+  /// self-expires with no cron job.
+  lockedUntil DateTime?
+
+  // ---- Audit --------------------------------------------------------------
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // ---- Relations ----------------------------------------------------------
+
+  sessions               Session[]
+  emailVerificationTokens EmailVerificationToken[]
+  passwordResetTokens     PasswordResetToken[]
+
+  // Module 2 will add:
+  //   addresses  Address[]
+  //   orders     Order[]
+  //   cart       Cart?
+  //   reviews    Review[]
+  //   wishlist   WishlistItem[]
+
+  @@index([lockedUntil])
+  // Supports an admin "currently locked accounts" view and any unlock sweep.
+
+  @@map("users")
+}
+
+// ============================================================================
+//  SESSION
+// ============================================================================
+//  Sessions over JWT: this is a single API with a single database, so JWT's
+//  stateless benefit does not apply — but its cost does. JWTs cannot be
+//  revoked. For a store, instant revocation is an operational requirement:
+//  password reset, account ban, admin demotion, stolen-device logout.
+//  One indexed PK lookup on Postgres is sub-millisecond; product queries
+//  are the real bottleneck, not this.
+// ============================================================================
+
+model Session {
+  id String @id @default(cuid())
+  // Separate opaque id rather than using the token hash as PK: the PK ends up
+  // in logs and error traces, so the credential stays confined to one column
+  // we handle carefully. Also gives the "sign out this device" UI a stable
+  // handle that is not itself the secret.
+
+  /// SHA-256 of a 32-byte crypto.randomBytes token, base64url-encoded.
+  /// The PLAINTEXT token exists only in the user's httpOnly cookie —
+  /// it is never written to the database or to logs.
+  ///
+  /// Why hash at rest: this table is a table of live credentials. A leak
+  /// (SQLi, stolen backup, misconfigured admin panel) with plaintext tokens
+  /// = instant takeover of every logged-in account, no password needed.
+  ///
+  /// Why SHA-256 and NOT Argon2: the token is already 256 bits of entropy —
+  /// there is nothing to brute-force. Slow hashing would add latency to
+  /// EVERY authenticated request for zero security gain. Slow hashing is for
+  /// low-entropy human-chosen passwords; fast hashing is correct here.
+  ///
+  /// Named `tokenHash`, not `token`, so no one ever assumes it is plaintext.
+  tokenHash String @unique
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Cascade: a session cannot meaningfully exist without its user, and orphan
+  // rows would accumulate forever in the hottest table in the schema.
+  // NOTE: this reasoning does NOT transfer to orders — those must survive
+  // account deletion for tax, accounting, and dispute resolution.
+
+  /// Server-side source of truth for expiry. The cookie's own maxAge is a
+  /// client-side hint only and must never be trusted.
+  expiresAt DateTime
+
+  // ---- Device metadata (optional but recommended) -------------------------
+  //  Included deliberately. Justification:
+  //    - Powers an "Active sessions" screen: "Chrome on Windows, Cairo —
+  //      Sign out". Essential for a customer whose phone was stolen.
+  //    - Enables anomaly detection: a session jumping continents mid-use.
+  //  Privacy trade-off (accepted):
+  //    - IP is personal data. Disclose it in the privacy policy, purge it
+  //      with the session, and never expose it to non-admin users.
+
+  ipAddress String? @db.VarChar(45) // 45 chars accommodates full IPv6
+  userAgent String?
+
+  /// Enables idle-timeout and a truthful "last active" in the sessions UI.
+  /// Update on a throttle (e.g. at most once per 5 min) — writing on every
+  /// request would turn a read-heavy path into a write-heavy one.
+  lastUsedAt DateTime @default(now())
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  // "Sign out all devices", and revoking every session on password change.
+
+  @@index([expiresAt])
+  // Supports the scheduled cleanup job that deletes expired rows.
+
+  // NOTE: tokenHash needs no separate @@index — @unique already created one.
+  // That index carries the single hottest query in the entire application:
+  // every authenticated request performs SELECT ... WHERE tokenHash = ?.
+  // Without it, Postgres sequential-scans the whole table on every page load.
+
+  @@map("sessions")
+}
+
+// ============================================================================
+//  EMAIL VERIFICATION TOKEN
+// ============================================================================
+//  Deliberately SEPARATE from PasswordResetToken rather than one model with a
+//  `type` enum. The two have different expiry windows and vastly different
+//  blast radii. With a shared table, forgetting `WHERE type = ...` even once
+//  would let a low-risk verification token be redeemed as a password reset —
+//  full account takeover. Two tables make that bug structurally impossible.
+//  Separation by risk level beats DRY.
+// ============================================================================
+
+model EmailVerificationToken {
+  id String @id @default(cuid())
+
+  /// SHA-256 hashed, same reasoning as Session.tokenHash.
+  tokenHash String @unique
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// ~24 hours. Longer window than a reset token: people check email later,
+  /// and a stolen verification token only confirms an inbox — minor damage.
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  // Invalidate any outstanding tokens when a new one is requested,
+  // preventing multiple valid links from living in an inbox at once.
+
+  @@index([expiresAt])
+
+  @@map("email_verification_tokens")
+}
+
+// ============================================================================
+//  PASSWORD RESET TOKEN
+// ============================================================================
+//  A password reset token IS a temporary password. Treat it accordingly.
+// ============================================================================
+
+model PasswordResetToken {
+  id String @id @default(cuid())
+
+  /// SHA-256 hashed. Critical here: a plaintext leak of this table grants
+  /// takeover of every account with a pending reset.
+  tokenHash String @unique
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// ~1 HOUR — deliberately much shorter than email verification.
+  /// The expiry window is the exposure window, and this token grants full
+  /// account takeover. An hour is ample for a user actively resetting.
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  // Two required uses:
+  //   1. Invalidate all prior tokens when a new reset is requested.
+  //   2. Invalidate all tokens after a successful reset.
+
+  @@index([expiresAt])
+
+  @@map("password_reset_tokens")
+}
+
+// ============================================================================
+//  ENFORCED IN APPLICATION CODE, NOT IN THE SCHEMA
+// ============================================================================
+//
+//  1. SINGLE-USE TOKENS
+//     Delete the token row inside the same transaction as the password
+//     update. Never "mark as used" while leaving a live credential in place.
+//
+//  2. REVOKE SESSIONS ON PASSWORD CHANGE
+//     After any password change or reset, delete ALL of that user's sessions.
+//     This is precisely the capability JWTs cannot provide.
+//
+//  3. EMAIL NORMALISATION
+//     Zod schema: .trim().toLowerCase().email() — applied at the edge so no
+//     route handler can bypass it.
+//
+//  4. ACCOUNT ENUMERATION
+//     Registration, login, and password-reset-request must return an
+//     IDENTICAL response and take comparable time whether or not the email
+//     exists. Otherwise the endpoint becomes a customer-list oracle.
+//
+//  5. TIMING ATTACKS
+//     When the email is not found on login, still run a dummy Argon2 verify
+//     against a fixed hash. Otherwise response time reveals which emails
+//     are registered.
+//
+//  6. LOCKOUT LOGIC
+//     failedLoginCount >= 5  ->  lockedUntil = now + 15 minutes
+//     On success             ->  failedLoginCount = 0, lockedUntil = null
+//
+//  7. EXPIRY CLEANUP
+//     Scheduled job deleting rows where expiresAt < now() across all three
+//     token tables. Expiry is checked at read time regardless — the job is
+//     for disk hygiene, never for correctness.
+//
+// ============================================================================

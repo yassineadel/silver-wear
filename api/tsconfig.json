@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+
+    // NodeNext is the correct pairing for "type": "module" in package.json.
+    // It is also why relative imports need a .js extension — see note below.
+    "module": "esnext",
+    "moduleResolution": "bundler",
+
+    // rootDir is "./" and not "./src" because prisma.config.ts sits at the
+    // project root. With rootDir "./src", TypeScript errors on any file
+    // outside src.
+    "rootDir": "./",
+    "outDir": "./dist",
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "forceConsistentCasingInFileNames": true,
+
+    "skipLibCheck": true,
+    // Skips type-checking .d.ts files in node_modules. Large generated
+    // clients otherwise slow every build considerably.
+
+    "sourceMap": true,
+    "declaration": false
+  },
+
+  "include": ["src/**/*.ts", "prisma.config.ts"],
+  "exclude": ["node_modules", "dist"]
+}
