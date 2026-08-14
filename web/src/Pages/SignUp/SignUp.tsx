@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { register, verifyOtp, resendOtp } from "../../lib/auth";
 import { ApiError } from "../../lib/api";
+import { useAuth } from "../../lib/AuthContext";
 import openedeye from "../../assets/images/open_eye-removebg-preview.png";
 import closededeye from "../../assets/images/closed_eye-removebg-preview.png";
 
@@ -21,6 +22,8 @@ function SignUp() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [pending, setPending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+
+  const { setUser } = useAuth();
 
   const navigate = useNavigate();
 
@@ -65,7 +68,8 @@ function SignUp() {
     setError(null);
 
     try {
-      await verifyOtp(email, code);
+     const res = await verifyOtp(email, code);
+      setUser(res.user);
       navigate("/", { replace: true });
     } catch (err) {
       handleApiError(err);

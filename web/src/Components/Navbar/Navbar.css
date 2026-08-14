@@ -1,0 +1,443 @@
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Jost:wght@300;400;500&display=swap");
+
+/* ── Tokens ────────────────────────────────────────────────
+   Retheme the whole bar by editing this block only.        */
+.nb {
+  --shell: #efede8;
+  --ink: #14161a;
+  --mute: #6e6f6b;
+  --line: #d8d5cd;
+  --signal: #5c4b8a;
+
+  --serif: "Instrument Serif", Georgia, serif;
+  --sans: "Jost", system-ui, sans-serif;
+
+  --bar-h: 68px;
+  --ease: cubic-bezier(0.65, 0, 0.35, 1);
+
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--shell);
+  color: var(--ink);
+  font-family: var(--sans);
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.3s var(--ease), background 0.3s var(--ease);
+}
+
+.nb--stuck {
+  border-bottom-color: var(--line);
+  background: color-mix(in srgb, var(--shell) 88%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+/* ── Ticker: collapses away once you start scrolling ────── */
+.nb__ticker {
+  display: grid;
+  grid-template-rows: 1fr;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+  transition: grid-template-rows 0.4s var(--ease), border-color 0.4s var(--ease),
+    opacity 0.3s var(--ease);
+}
+
+.nb--stuck .nb__ticker {
+  grid-template-rows: 0fr;
+  border-bottom-color: transparent;
+  opacity: 0;
+}
+
+.nb__ticker > p {
+  min-height: 0;
+  margin: 0;
+  padding: 9px 20px;
+  text-align: center;
+  font-size: 0.68rem;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--mute);
+}
+
+/* ── Bar ─────────────────────────────────────────────────── */
+.nb__bar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+  height: var(--bar-h);
+  padding: 0 clamp(16px, 4vw, 40px);
+}
+
+/* ── Wordmark ────────────────────────────────────────────── */
+.nb__wordmark {
+  grid-column: 2;
+  justify-self: center;
+  font-family: var(--serif);
+  font-size: clamp(1.4rem, 1.1rem + 1vw, 1.85rem);
+  line-height: 1;
+  letter-spacing: 0.015em;
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.nb__wordmarkDot {
+  color: var(--signal);
+}
+
+/* ── Left nav + the flip interaction ─────────────────────── */
+.nb__links {
+  grid-column: 1;
+  display: flex;
+  align-items: center;
+  gap: clamp(18px, 2.4vw, 34px);
+}
+
+.nb__link {
+  text-decoration: none;
+  color: inherit;
+  font-size: 0.74rem;
+  font-weight: 400;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  border-radius: 2px;
+}
+
+.nb__flip {
+  display: block;
+  overflow: hidden;
+  height: 1.15em;
+}
+
+.nb__flipLine {
+  display: block;
+  height: 1.15em;
+  line-height: 1.15em;
+  transition: transform 0.42s var(--ease);
+}
+
+.nb__flipLine--alt {
+  color: var(--signal);
+}
+
+.nb__link:hover .nb__flipLine,
+.nb__link:focus-visible .nb__flipLine {
+  transform: translateY(-1.15em);
+}
+
+/* ── Utilities, right ────────────────────────────────────── */
+.nb__utils {
+  grid-column: 3;
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: clamp(14px, 2vw, 26px);
+}
+
+.nb__util {
+  position: relative;
+  text-decoration: none;
+  color: var(--ink);
+  font-size: 0.74rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding-bottom: 3px;
+  border-radius: 2px;
+}
+
+.nb__util::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 1px;
+  background: var(--signal);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.35s var(--ease);
+}
+
+.nb__util:hover::after,
+.nb__util:focus-visible::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+.nb__cart {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.nb__count {
+  font-size: 0.62rem;
+  letter-spacing: 0;
+  color: var(--signal);
+  font-variant-numeric: tabular-nums;
+}
+
+.nb__count::before {
+  content: "(";
+}
+.nb__count::after {
+  content: ")";
+}
+
+/* ── Burger (mobile only) ────────────────────────────────── */
+.nb__burger {
+  display: none;
+  grid-column: 1;
+  justify-self: start;
+  background: none;
+  border: 0;
+  padding: 8px;
+  margin-left: -8px;
+  cursor: pointer;
+  color: var(--ink);
+  border-radius: 2px;
+}
+
+.nb__burgerBox {
+  display: block;
+  width: 22px;
+  height: 12px;
+  position: relative;
+}
+
+.nb__burgerBox span {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 1.5px;
+  background: currentColor;
+  transition: transform 0.35s var(--ease), opacity 0.2s linear;
+}
+
+.nb__burgerBox span:first-child {
+  top: 0;
+}
+.nb__burgerBox span:last-child {
+  bottom: 0;
+}
+
+.nb--open .nb__burgerBox span:first-child {
+  transform: translateY(5.25px) rotate(45deg);
+}
+.nb--open .nb__burgerBox span:last-child {
+  transform: translateY(-5.25px) rotate(-45deg);
+}
+
+/* ── Mobile panel ────────────────────────────────────────── */
+.nb__panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  overflow: hidden;
+  transition: grid-template-rows 0.45s var(--ease);
+  border-top: 1px solid transparent;
+}
+
+.nb__panel[data-open="true"] {
+  grid-template-rows: 1fr;
+  border-top-color: var(--line);
+}
+
+.nb__panelInner {
+  min-height: 0;
+}
+
+.nb__panel nav {
+  display: flex;
+  flex-direction: column;
+  padding: 12px clamp(16px, 4vw, 40px) 4px;
+}
+
+.nb__panel nav a {
+  font-family: var(--serif);
+  font-size: 1.65rem;
+  line-height: 1.9;
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px solid var(--line);
+}
+
+.nb__panel nav a:last-child {
+  border-bottom: 0;
+}
+
+.nb__panelAccount {
+  display: block;
+  padding: 14px clamp(16px, 4vw, 40px) 26px;
+  font-size: 0.74rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--mute);
+  text-decoration: none;
+}
+
+/* ── Focus ───────────────────────────────────────────────── */
+.nb a:focus-visible,
+.nb button:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 4px;
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 860px) {
+  .nb__links {
+    display: none;
+  }
+  .nb__burger {
+    display: block;
+  }
+  .nb__util--hideSm {
+    display: none;
+  }
+}
+
+@media (min-width: 861px) {
+  .nb__panel {
+    display: none;
+  }
+}
+
+/* ── Reduced motion ──────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .nb,
+  .nb *,
+  .nb *::after {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+
+
+/* ── Search overlay ──────────────────────────────────────── */
+.nb__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: rgba(20, 22, 26, 0.28);
+  animation: nbFade 0.3s var(--ease);
+}
+
+@keyframes nbFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.nb__search {
+  display: grid;
+  grid-template-rows: 0fr;
+  overflow: hidden;
+  background: var(--shell);
+  transition: grid-template-rows 0.42s var(--ease);
+}
+
+.nb__search[data-open="true"] {
+  grid-template-rows: 1fr;
+  border-top: 1px solid var(--line);
+}
+
+.nb__searchInner {
+  min-height: 0;
+}
+
+.nb__searchField {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 30px clamp(16px, 4vw, 40px) 14px;
+}
+
+.nb__searchField input {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  padding: 6px 0 12px;
+  font-family: var(--serif);
+  font-size: clamp(1.3rem, 1rem + 1.6vw, 2.1rem);
+  color: var(--ink);
+  transition: border-color 0.3s var(--ease);
+}
+
+.nb__searchField input::placeholder {
+  color: var(--mute);
+  opacity: 0.55;
+}
+
+.nb__searchField input:focus {
+  outline: none;
+  border-bottom-color: var(--signal);
+}
+
+.nb__searchGo {
+  flex: none;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: var(--signal);
+  font-family: var(--sans);
+  font-size: 0.74rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 8px 2px;
+}
+
+.nb__searchHints {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 0 clamp(16px, 4vw, 40px) 30px;
+}
+
+.nb__searchHints > span {
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--mute);
+}
+
+.nb__searchHints button {
+  background: none;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  padding: 2px 0;
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  color: var(--ink);
+  transition: border-color 0.25s var(--ease);
+}
+
+.nb__searchHints button:hover {
+  border-bottom-color: var(--signal);
+}
+
+/* Search trigger is a button now, so it needs the anchor's reset */
+.nb__utilBtn {
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font-family: var(--sans);
+  padding: 0 0 3px;
+}
+
+.nb__panelSearch {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font-family: var(--serif);
+  font-size: 1.65rem;
+  line-height: 1.9;
+  color: var(--ink);
+  padding: 0 clamp(16px, 4vw, 40px);
+  border-top: 1px solid var(--line);
+}

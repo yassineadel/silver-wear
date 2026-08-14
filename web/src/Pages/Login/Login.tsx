@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { login } from "../../lib/auth";
 import { ApiError } from "../../lib/api";
+import { useAuth } from "../../lib/AuthContext";
 import Submitarrow from "../../assets/images/Submit-Arrow-removebg.png";
 import openedeye from "../../assets/images/open_eye-removebg-preview.png";
 import closededeye from "../../assets/images/closed_eye-removebg-preview.png";
@@ -14,6 +15,7 @@ function Login() {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const navigate = useNavigate();
+  const { setUser } = useAuth();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -21,7 +23,8 @@ function Login() {
     setError(null);
 
     try {
-      await login(email, password);
+    const res = await login(email, password);
+      setUser(res.user);
       navigate("/", { replace: true });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Network error");
