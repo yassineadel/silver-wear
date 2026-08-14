@@ -34,3 +34,10 @@ export const verifyOtp = (email: string, code: string) =>
 export const getMe = () => api<{ user: User | null }>("/auth/me");
 
 export const logout = () => api<void>("/auth/logout", { method: "POST" });
+
+
+export const resendOtp = (email: string) =>
+  api<{ message: string }>("/auth/resend-otp", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });

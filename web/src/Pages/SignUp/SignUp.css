@@ -197,3 +197,33 @@
     .BrandName { font-size: 36px; }
     .NameRow { flex-direction: column; }
 }
+
+
+.ErrorText {
+    margin: 0;
+    color: #B4453C;
+    font-size: 13px;
+}
+
+.OtpInput {
+    text-align: center;
+    font-size: 28px;
+    letter-spacing: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.TextButton {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-size: 13px;
+    cursor: pointer;
+    padding: 4px;
+}
+
+.TextButton:hover { text-decoration: underline; }
+
+.PrimaryButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
