@@ -1,0 +1,199 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+:root {
+    --bg: #FDF6E7;
+    --surface: #FFFAF0;
+    --ink: #2D3A34;
+    --ink-soft: #6B7A70;
+    --accent: #8FA28A;
+    --accent-hover: #7A8F75;
+    --border: #E3DACA;
+    --radius: 10px;
+}
+
+.MainContainer {
+    min-height: 100vh;
+    background-color: var(--bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 16px;
+    gap: 32px;
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+.BrandName {
+    color: var(--ink);
+    font-weight: 300;
+    font-size: 48px;
+    letter-spacing: 0.08em;
+}
+
+.Sign-in {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    max-width: 380px;
+}
+
+.Sign-in h2 {
+    margin: 0 0 4px;
+    color: var(--ink);
+    font-size: 26px;
+    font-weight: 500;
+}
+
+.Sign-in h5 {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 14px;
+    font-weight: 400;
+}
+
+.ContinueWithGoogle {
+    width: 100%;
+    height: 48px;
+    margin: 20px 0;
+    background-color: #C7D3C0;
+    color: var(--ink);
+    border: none;
+    border-radius: var(--radius);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.ContinueWithGoogle:hover { background-color: #B6C6AE; }
+.ContinueWithGoogle:active { transform: scale(0.99); }
+
+.Separator {
+    width: 100%;
+    height: 1px;
+    background-color: var(--border);
+    margin-bottom: 20px;
+}
+
+.Credentials {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+}
+
+.NameRow {
+    display: flex;
+    gap: 12px;
+}
+
+.NameRow input { flex: 1; min-width: 0; }
+
+.Credentials input {
+    width: 100%;
+    height: 46px;
+    padding: 0 14px;
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--ink);
+    font-size: 15px;
+    transition: border-color 0.2s ease;
+}
+
+.Credentials input::placeholder { color: #A79E8C; }
+
+.Credentials input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.Credentials input:-webkit-autofill {
+    -webkit-text-fill-color: var(--ink);
+    -webkit-box-shadow: 0 0 0 1000px var(--surface) inset;
+}
+
+.InputWrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.PasswordInput { padding-right: 44px; }
+.PasswordInput::-ms-reveal { display: none; }
+
+.EyeButton {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.2s ease;
+}
+
+.EyeButton:hover { opacity: 1; }
+
+.EyeButton img { width: 18px; height: 18px; display: block; }
+
+.Hint {
+    margin: -4px 0 4px;
+    color: var(--ink-soft);
+    font-size: 12px;
+}
+
+.PrimaryButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    height: 48px;
+    margin-top: 4px;
+    background-color: var(--accent);
+    color: var(--surface);
+    border: none;
+    border-radius: var(--radius);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.PrimaryButton:hover { background-color: var(--accent-hover); }
+.PrimaryButton:active { transform: scale(0.99); }
+.PrimaryButton img { width: 18px; height: 18px; }
+
+.signuplink {
+    align-self: center;
+    margin-top: 8px;
+    color: var(--accent);
+    font-size: 13px;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.signuplink:hover { color: var(--ink); text-decoration: underline; }
+
+.Policy a {
+    color: var(--ink-soft);
+    font-size: 13px;
+    text-decoration: none;
+}
+
+.Policy a:hover { text-decoration: underline; }
+
+@media (max-width: 480px) {
+    .BrandName { font-size: 36px; }
+    .NameRow { flex-direction: column; }
+}
