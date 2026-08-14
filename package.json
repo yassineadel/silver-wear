@@ -1,0 +1,11 @@
+{
+  "name": "silver-wear",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n api,web -c cyan,magenta \"npm --prefix api run dev\" \"npm --prefix web run dev\"",
+    "install:all": "npm --prefix api install && npm --prefix web install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

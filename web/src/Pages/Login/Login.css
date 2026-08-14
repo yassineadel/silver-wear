@@ -222,3 +222,15 @@
     .BrandName { font-size: 36px; }
     .MainContainer { justify-content: flex-start; gap: 48px; }
 }
+
+
+.ErrorText {
+    margin: 0;
+    color: #B4453C;
+    font-size: 13px;
+}
+
+.SubmitButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
